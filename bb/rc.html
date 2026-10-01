@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-rc</title>
+<script src="https://www.recaptcha.net/recaptcha/api.js?render=6LcQtYYsAAAAAIfw8d0JXSofKAabFzkx74v15K9D"></script>
+</head><body><h1>w1nd3x rc v3</h1><pre id="t">pending</pre>
+<script>
+window.addEventListener('load',()=>{
+ if(!window.grecaptcha){document.getElementById('t').textContent='NO_GRECAPTCHA';return;}
+ grecaptcha.ready(()=>{
+   grecaptcha.execute('6LcQtYYsAAAAAIfw8d0JXSofKAabFzkx74v15K9D',{action:'register_device'})
+    .then(t=>{document.getElementById('t').textContent='TOKEN:'+t;})
+    .catch(e=>{document.getElementById('t').textContent='ERR:'+e;});
+ });
+});
+</script></body></html>
