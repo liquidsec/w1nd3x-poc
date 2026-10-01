@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><title>w1nd3x-probe-init</title></head>
+<body><h1 id="h">w1nd3x relay probe</h1><pre id="out">starting</pre>
+<script>
+const T = [
+  ["GET","https://developer.bbpos.com/login"],
+  ["POST","https://developer.bbpos.com/login"],
+  ["GET","https://tms.bbpos.com/login"],
+  ["POST","https://portal.wisemanager.com/mdm/pingBackend"],
+  ["GET","https://example.com/"]
+];
+const log=[];
+function dump(){document.getElementById('out').textContent=JSON.stringify(log);document.title='w1nd3x-'+log.length;}
+(async()=>{
+ for(const [m,u] of T){
+   const q=u+(u.includes('?')?'&':'?')+'w1nd3xq='+Math.random().toString(36).slice(2);
+   // opaque no-cors (request IS sent; shows up in Lighthouse network-requests)
+   try{ await fetch(q,{method:m,mode:'no-cors',credentials:'omit',
+        headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
+        body:m==='POST'?'w1nd3x=1':undefined}); log.push([m,u,'nocors-sent']);}
+   catch(e){ log.push([m,u,'nocors-err',String(e).slice(0,80)]); }
+   // cors attempt (readable only if target allows)
+   try{ const r=await fetch(q,{method:m,mode:'cors',credentials:'omit',
+        headers:m==='POST'?{'Content-Type':'application/x-www-form-urlencoded'}:{},
+        body:m==='POST'?'w1nd3x=1':undefined});
+        const t=await r.text(); log.push([m,u,'CORS-OK',r.status,t.length,t.slice(0,200)]);}
+   catch(e){ log.push([m,u,'cors-blocked',String(e).slice(0,60)]); }
+   dump();
+ }
+ dump();
+})();
+</script></body></html>
